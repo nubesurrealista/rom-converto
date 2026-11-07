@@ -8,6 +8,13 @@ on:
         required: false
         type: string
         default: ""
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to build. Defaults to the current branch."
+        required: false
+        type: string
+        default: ""
 
 env:
   CARGO_TERM_COLOR: always
