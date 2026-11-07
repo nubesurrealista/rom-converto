@@ -8,19 +8,10 @@ on:
         required: false
         type: string
         default: ""
-      release:
-        description: "Upload build outputs to a GitHub Release instead of workflow artifacts."
-        required: false
-        type: boolean
-        default: false
-      release_tag:
-        description: "Release tag to upload assets to when release is true."
-        required: false
-        type: string
-        default: ""
 
 env:
   CARGO_TERM_COLOR: always
+  CARGO_TARGET_ARMV7_UNKNOWN_LINUX_MUSLEABIHF_RUSTFLAGS: "-C target-feature=+crt-static"
 
 jobs:
   build:
@@ -30,46 +21,11 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            target: x86_64-unknown-linux-gnu
-            classifier: linux-x64
-            force_cross: false
-          - os: ubuntu-22.04
-            target: armv7-unknown-linux-gnueabihf
-            classifier: linux-arm7
-            force_cross: false
-          - os: ubuntu-22.04
-            target: aarch64-unknown-linux-gnu
-            classifier: linux-arm64
-            force_cross: false
-          - os: ubuntu-22.04
-            target: x86_64-unknown-linux-musl
-            classifier: linux-x64-musl
+            target: armv7-unknown-linux-musleabihf
+            classifier: linux-armv7-musl
             force_cross: true
-          - os: ubuntu-22.04
-            target: aarch64-unknown-linux-musl
-            classifier: linux-arm64-musl
-            force_cross: true
-          - os: ubuntu-22.04
-            target: x86_64-unknown-freebsd
-            classifier: freebsd-x64
-            force_cross: false
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            classifier: windows-x64
-            force_cross: false
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            classifier: macos-x64
-            force_cross: false
-          - os: macos-latest
-            target: aarch64-apple-darwin
-            classifier: macos-arm64
-            force_cross: false
 
     runs-on: ${{ matrix.os }}
-    env:
-      CARGO_TARGET_X86_64_UNKNOWN_FREEBSD_RUSTFLAGS: "-l stdc++"
-      ROM_CONVERTO_RELEASE: ${{ inputs.release && '1' || '' }}
 
     steps:
       - name: Checkout source
@@ -89,7 +45,7 @@ jobs:
           cross-version: v0.2.5
           # Release builds run on main, whose cache scope is separate and
           # evicted between releases; skip the cache there.
-          use-rust-cache: ${{ !inputs.release }}
+          use-rust-cache: true
           # The FFI build reads this cache (same job id and key) and never
           # saves. Cross.toml is hashed so an image bump starts a fresh cache.
           rust-cache-parameters: '{"key":"build-${{ hashFiles(''Cross.toml'') }}","save-if":"${{ github.event_name != ''pull_request'' }}"}'
@@ -117,22 +73,8 @@ jobs:
           (cd artifact && $sha_cmd "$(basename "$dst")" > "$(basename "$dst").sha256")
 
       - name: Upload workflow artifact
-        if: ${{ !inputs.release }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: rom-converto-cli-${{ matrix.classifier }}
           path: artifact/
           if-no-files-found: error
-
-      - name: Attest build provenance
-        if: ${{ inputs.release }}
-        uses: actions/attest-build-provenance@4d101475d8b20a2381f78447822ac1eab6504dd8 # v4.2.2
-        with:
-          subject-path: artifact/*
-
-      - name: Upload to release
-        if: ${{ inputs.release }}
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        with:
-          tag_name: ${{ inputs.release_tag }}
-          files: artifact/*
