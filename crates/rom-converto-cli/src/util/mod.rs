@@ -1,5 +1,3 @@
-pub mod http;
-
 use crate::commands::ConflictPolicyArg;
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use rom_converto_lib::util::{ConflictPolicy, ProgressReporter};

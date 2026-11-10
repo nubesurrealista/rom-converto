@@ -7,7 +7,7 @@ use crate::commands::dat::DatCommands;
 use crate::commands::dol::DolCommands;
 use crate::commands::hash::HashCommand;
 use crate::commands::info_command::InfoCommand;
-use crate::commands::misc::{CapabilitiesCommand, SelfUpdateCommand};
+use crate::commands::misc::CapabilitiesCommand;
 use crate::commands::ntr::NtrCommands;
 use crate::commands::nx::NxCommands;
 use crate::commands::organize::OrganizeCommand;
@@ -73,10 +73,6 @@ pub struct Cli {
     /// Increase verbosity (-v debug, -vv trace, -vvv trace + dependencies)
     #[arg(short = 'v', long, global = true, action = clap::ArgAction::Count)]
     pub verbose: u8,
-
-    /// Skip the check for a newer release
-    #[arg(long = "no-update-check", global = true)]
-    pub no_update_check: bool,
 
     /// Path to a config file; overrides the search order
     #[arg(long = "config", global = true, value_name = "FILE")]
@@ -165,8 +161,6 @@ pub enum Commands {
     Info(InfoCommand),
 
     Playlist(PlaylistCommand),
-
-    SelfUpdate(SelfUpdateCommand),
 
     ShellCompletions(ShellCompletionsCommand),
 }

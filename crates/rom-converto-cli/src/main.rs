@@ -4,15 +4,12 @@
 //! and config file resolution around those calls.
 
 use crate::commands::{Cli, Commands};
-use crate::github::api::GithubApi;
-use crate::updater::{check_for_new_version_and_notify, cleanup_old_executable, self_update};
 use crate::util::{IndicatifProgress, TotalProgress};
 use anyhow::{Context, Result};
 use clap::Parser;
 use indicatif::MultiProgress;
 use indicatif_log_bridge::LogWrapper;
 use rom_converto_lib::runner::is_cancelled_error;
-use std::io::IsTerminal;
 
 use crate::commands::support::DispatchCtx;
 
@@ -20,18 +17,11 @@ mod batch;
 mod commands;
 mod config;
 mod dry_run;
-mod github;
 mod info_print;
 mod logging;
-mod updater;
 mod util;
 // Mirrors the inline logic in build.rs; kept here so it is unit-testable.
 mod version;
-
-pub mod built_info {
-    // The file has been placed there by the build script.
-    include!(concat!(env!("OUT_DIR"), "/built.rs"));
-}
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -95,20 +85,6 @@ async fn main() -> Result<()> {
     }
     log::set_max_level(max_level);
 
-    // Non-fatal: a locked or read-only leftover from a previous self-update
-    // must not stop the freshly installed binary from running.
-    if let Err(e) = cleanup_old_executable().await {
-        log::debug!("Could not remove old executable: {e}");
-    }
-
-    if should_check_for_updates(cli.no_update_check) {
-        // Non-fatal: network outages or GitHub rate limits shouldn't
-        // prevent the user from running conversions offline.
-        if let Err(e) = check_for_new_version_and_notify(&mut GithubApi::new()?).await {
-            log::debug!("Update check skipped: {e}");
-        }
-    }
-
     let progress = IndicatifProgress::new(pb.clone());
     let total_progress = TotalProgress::new(pb);
 
@@ -161,18 +137,6 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-fn should_check_for_updates(no_update_check: bool) -> bool {
-    if no_update_check {
-        return false;
-    }
-    for var in ["ROM_CONVERTO_NO_UPDATE_CHECK", "NO_UPDATE_NOTIFIER", "CI"] {
-        if std::env::var(var).is_ok() {
-            return false;
-        }
-    }
-    std::io::stderr().is_terminal()
-}
-
 async fn dispatch_command(command: Commands, ctx: DispatchCtx<'_>) -> Result<()> {
     use crate::commands as c;
     match command {
@@ -196,7 +160,6 @@ async fn dispatch_command(command: Commands, ctx: DispatchCtx<'_>) -> Result<()>
         Commands::Hash(cmd) => c::hash::run(cmd, ctx).await,
         Commands::Info(cmd) => c::info_command::run(cmd, ctx).await,
         Commands::Playlist(cmd) => c::playlist::run(cmd, ctx).await,
-        Commands::SelfUpdate(_) => self_update(&mut GithubApi::new()?).await,
         Commands::ShellCompletions(cmd) => c::completions::run(&cmd),
     }
 }

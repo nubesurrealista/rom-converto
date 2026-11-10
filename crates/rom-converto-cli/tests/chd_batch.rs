@@ -1,9 +1,7 @@
 use std::process::{Command, Output};
 
 fn bin() -> Command {
-    let mut cmd = Command::new(env!("CARGO_BIN_EXE_rom-converto"));
-    cmd.env("ROM_CONVERTO_NO_UPDATE_CHECK", "1");
-    cmd
+    Command::new(env!("CARGO_BIN_EXE_rom-converto"))
 }
 
 fn combined(output: &Output) -> String {

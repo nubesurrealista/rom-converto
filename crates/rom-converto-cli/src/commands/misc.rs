@@ -6,13 +6,6 @@ use anyhow::Result;
 #[derive(Parser, Debug, Clone, Eq, PartialEq)]
 pub struct CapabilitiesCommand {}
 
-/// Check for and install a newer version of the CLI
-#[derive(Parser, Debug, Clone, Eq, PartialEq)]
-#[command(
-    long_about = "Check for and install a newer version of the CLI\n\nDownloads and installs the latest release if one is available."
-)]
-pub struct SelfUpdateCommand {}
-
 /// Runs one `capabilities` subcommand.
 pub async fn run(_cmd: CapabilitiesCommand) -> Result<()> {
     let manifest = serde_json::json!({
